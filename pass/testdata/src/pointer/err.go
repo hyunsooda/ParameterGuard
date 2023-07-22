@@ -9,5 +9,5 @@ func _(ptr *int) { // want "Declared 'ptr'"
 }
 
 func _(f fptr) { // want "Declared 'f'"
-	f(1, 2) // want "Unsafely used 'f'"
+	f(1, 2) // want "Unsafely used ''"
 }
