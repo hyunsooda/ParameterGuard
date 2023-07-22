@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/hyunsooda/mylinter/pass"
+	"github.com/hyunsooda/unsafeuse/pass"
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
 

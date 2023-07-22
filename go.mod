@@ -1,4 +1,4 @@
-module github.com/hyunsooda/mylinter
+module github.com/hyunsooda/unsafeuse
 
 go 1.20
 
