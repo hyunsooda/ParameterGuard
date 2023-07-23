@@ -158,36 +158,11 @@ func runExpr(pass *analysis.Pass, n ast.Node, params []*types.Var) *ParamUsage {
 		if fnIdent := match(pass, expr.Fun, params); fnIdent != nil {
 			return NewParamUsage(fnIdent, nil, expr, fnIdent.Pos())
 		}
-
-	// Guard Definition 1
 	case *ast.BinaryExpr:
-		lhs, op, rhs := expr.X, expr.Op, expr.Y
-		lhsV := match(pass, lhs, params)
-		rhsV := match(pass, rhs, params)
-		if op == token.EQL || op == token.NEQ {
-			if lhsV != nil {
-				if rhsIdent := cast2Ident(rhs); rhsIdent != nil && rhsIdent.Name == "nil" {
-					return NewParamUsage(lhsV, expr, nil, lhsV.Pos())
-				}
-			}
-			if rhsV != nil {
-				if lhsIdent := cast2Ident(lhs); lhsIdent != nil && lhsIdent.Name == "nil" {
-					return NewParamUsage(rhsV, expr, nil, rhsV.Pos())
-				}
-			}
-		}
-	// Guard Definition 2
-	case *ast.TypeSwitchStmt:
-		if assignExpr, ok := expr.Assign.(*ast.ExprStmt); ok {
-			if typAssertExpr, ok := assignExpr.X.(*ast.TypeAssertExpr); ok {
-				if v := match(pass, typAssertExpr.X, params); v != nil {
-					if _, ok := v.Type().Underlying().(*types.Interface); ok {
-						return NewParamUsage(v, expr, nil, v.Pos())
-					}
-				}
-			}
-		}
+		return runBinaryExpr(pass, expr, params)
 
+	case *ast.TypeSwitchStmt:
+		return runTypSwitchStmt(pass, expr, params)
 	case *ast.StarExpr:
 		if v := match(pass, expr, params); v != nil {
 			return NewParamUsage(v, nil, expr, v.Pos())
@@ -206,25 +181,83 @@ func runExpr(pass *analysis.Pass, n ast.Node, params []*types.Var) *ParamUsage {
 		if v := match(pass, expr.X, params); v != nil {
 			return NewParamUsage(v, nil, expr, v.Pos())
 		}
-		// default:
-		// 	fmt.Println(reflect.TypeOf(expr))
 	}
 	return nil
 }
 
+func lenCompGuard(pass *analysis.Pass, expr ast.Expr, params []*types.Var) *ParamUsage {
+	if callExpr, isCallExpr := expr.(*ast.CallExpr); isCallExpr {
+		if fnIdent := cast2Ident(callExpr); fnIdent != nil && fnIdent.Name == "len" {
+			if lenParam := match(pass, callExpr.Args[0], params); lenParam != nil {
+				return NewParamUsage(lenParam, expr, nil, lenParam.Pos())
+			}
+		}
+	}
+	return nil
+}
+
+func runBinaryExpr(pass *analysis.Pass, binaryExpr *ast.BinaryExpr, params []*types.Var) *ParamUsage {
+	// Guard Definition 1
+	lhs, op, rhs := binaryExpr.X, binaryExpr.Op, binaryExpr.Y
+	lhsV := match(pass, lhs, params)
+	rhsV := match(pass, rhs, params)
+	if op == token.EQL || op == token.NEQ {
+		if lhsV != nil {
+			if rhsIdent := cast2Ident(rhs); rhsIdent != nil && rhsIdent.Name == "nil" {
+				return NewParamUsage(lhsV, binaryExpr, nil, lhsV.Pos())
+			}
+		}
+		if rhsV != nil {
+			if lhsIdent := cast2Ident(lhs); lhsIdent != nil && lhsIdent.Name == "nil" {
+				return NewParamUsage(rhsV, binaryExpr, nil, rhsV.Pos())
+			}
+		}
+	}
+
+	// Guard Definition 2
+	if op == token.EQL || op == token.NEQ || op == token.LEQ || op == token.GEQ || op == token.LSS || op == token.GTR {
+		if lenParamUsage := lenCompGuard(pass, lhs, params); lenParamUsage != nil {
+			if isSliceTyp(lenParamUsage.Param) {
+				return lenParamUsage
+			}
+		}
+		if lenParamUsage := lenCompGuard(pass, rhs, params); lenParamUsage != nil {
+			if isSliceTyp(lenParamUsage.Param) {
+				return lenParamUsage
+			}
+		}
+	}
+	return nil
+}
+
+func runTypSwitchStmt(pass *analysis.Pass, typSwitchStmt *ast.TypeSwitchStmt, params []*types.Var) *ParamUsage {
+	// Guard Definition 3
+	if assignExpr, ok := typSwitchStmt.Assign.(*ast.ExprStmt); ok {
+		if typAssertExpr, ok := assignExpr.X.(*ast.TypeAssertExpr); ok {
+			if v := match(pass, typAssertExpr.X, params); v != nil {
+				if _, ok := v.Type().Underlying().(*types.Interface); ok {
+					return NewParamUsage(v, typSwitchStmt, nil, v.Pos())
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func isSliceTyp(paramTyp *types.Var) bool {
+	_, isSliceTyp := paramTyp.Type().Underlying().(*types.Slice)
+	return isSliceTyp
+}
+
 func cast2Ident(expr ast.Expr) *ast.Ident {
 	switch typ := expr.(type) {
-	// case *ast.StarExpr:
 	case *ast.StarExpr:
 		return cast2Ident(typ.X)
 	case *ast.CallExpr:
 		return cast2Ident(typ.Fun)
 	case *ast.Ident:
 		return typ
-	// case *ast.BasicLit:
-	// TODO: is it correct?
 	default:
-		// panic(fmt.Sprintf("not considered :%v", reflect.TypeOf(expr)))
 		return nil
 	}
 }
