@@ -20,6 +20,7 @@ type Config struct {
 		Pkg   string
 		Funcs []string
 	}
+	Log bool
 }
 
 const (
@@ -58,7 +59,7 @@ func isInExcludes(pass *analysis.Pass, fnDecl *ast.FuncDecl, config *Config) boo
 	for _, file := range config.Files {
 		trimmed := filepath.Base(curFileName)
 		if strCmp(file, curFileName) || strCmp(file, trimmed) {
-			pass.Reportf(fnDecl.Pos(), curFileName+" file skipped")
+			skipLog(pass, config, curFileName+" file skipped")
 			return true
 		}
 	}
@@ -67,7 +68,7 @@ func isInExcludes(pass *analysis.Pass, fnDecl *ast.FuncDecl, config *Config) boo
 	curPkg := pass.Pkg.Name()
 	for _, pkg := range config.Pkgs {
 		if strCmp(pkg, curPkg) {
-			pass.Reportf(fnDecl.Pos(), curPkg+" package skipped")
+			skipLog(pass, config, curPkg+" package skipped")
 			return true
 		}
 	}
@@ -78,13 +79,19 @@ func isInExcludes(pass *analysis.Pass, fnDecl *ast.FuncDecl, config *Config) boo
 		if strCmp(funcs.Pkg, curPkg) {
 			for _, funcName := range funcs.Funcs {
 				if curFunc == funcName {
-					pass.Reportf(fnDecl.Pos(), curFunc+" function skipped")
+					skipLog(pass, config, filepath.Join(curPkg, curFunc)+" function skipped")
 					return true
 				}
 			}
 		}
 	}
 	return false
+}
+
+func skipLog(pass *analysis.Pass, config *Config, logStr string) {
+	if config.Log {
+		pass.Reportf(0, logStr)
+	}
 }
 
 func isWildcardPattrn(str string) bool {
