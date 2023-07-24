@@ -1,14 +1,10 @@
 package pass
 
 import (
-	"flag"
 	"fmt"
 	"go/ast"
 	"go/token"
 	"go/types"
-	"path/filepath"
-	"strconv"
-	"strings"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -22,8 +18,6 @@ type ParamUsage struct {
 	DeclaredAt token.Pos
 }
 
-const FLAG_EXCLUDE_TEST = "excludetest"
-
 var (
 	TestOn   = false
 	Analyzer = &analysis.Analyzer{
@@ -34,12 +28,6 @@ var (
 	}
 )
 
-func Init() {
-	customFlags := flag.NewFlagSet("unsafeuse-flags", flag.ExitOnError)
-	customFlags.Bool(FLAG_EXCLUDE_TEST, false, "Set true to exclude test files. (default=false)")
-	Analyzer.Flags = *customFlags
-}
-
 func NewParamUsage(param *types.Var, GuardAt, UseAt ast.Node, DeclaredAt token.Pos) *ParamUsage {
 	return &ParamUsage{
 		Param:      param,
@@ -49,41 +37,28 @@ func NewParamUsage(param *types.Var, GuardAt, UseAt ast.Node, DeclaredAt token.P
 	}
 }
 
-func isExcludeTestFiles(pass *analysis.Pass) bool {
-	v := pass.Analyzer.Flags.Lookup(FLAG_EXCLUDE_TEST).Value.String()
-	if isOn, err := strconv.ParseBool(v); err == nil {
-		return isOn
-	} else {
-		panic(err)
-	}
-}
-
 func run(pass *analysis.Pass) (interface{}, error) {
+	config := parseConfig(pass)
+
 	insp := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 	filterNodes := []ast.Node{
 		(*ast.FuncDecl)(nil),
 	}
 	insp.Preorder(filterNodes, func(n ast.Node) {
 		if fnDecl, ok := n.(*ast.FuncDecl); ok {
-			if isExcludeTestFiles(pass) {
-				fileName := strings.TrimSuffix(filepath.Base(pass.Fset.File(fnDecl.Pos()).Name()), ".go")
-				if len(fileName) > 4 && fileName[len(fileName)-4:] == "test" {
-					pass.Reportf(fnDecl.Pos(), "testfile skipped")
-					return
-				}
-			}
-
-			if fn, ok := pass.TypesInfo.Defs[fnDecl.Name]; ok {
-				sig := fn.Type().(*types.Signature)
-				params := sig.Params()
-				ptrParams := getNilableParams(params)
-				if len(ptrParams) > 0 {
-					unsanitized := runBlk(pass, fnDecl.Body, ptrParams)
-					addReports(pass, fn, unsanitized)
-					if TestOn {
-						for _, violated := range unsanitized {
-							pass.Reportf(violated.DeclaredAt, fmt.Sprintf("Declared '%s'", violated.Param.Name()))
-							pass.Reportf(violated.UseAt.Pos(), fmt.Sprintf("Unsafely used '%s'", violated.Param.Name()))
+			if !isInExcludes(pass, fnDecl, config) {
+				if fn, ok := pass.TypesInfo.Defs[fnDecl.Name]; ok {
+					sig := fn.Type().(*types.Signature)
+					params := sig.Params()
+					ptrParams := getNilableParams(params)
+					if len(ptrParams) > 0 {
+						unsanitized := runBlk(pass, fnDecl.Body, ptrParams)
+						addReports(pass, fn, unsanitized)
+						if TestOn {
+							for _, violated := range unsanitized {
+								pass.Reportf(violated.DeclaredAt, fmt.Sprintf("Declared '%s'", violated.Param.Name()))
+								pass.Reportf(violated.UseAt.Pos(), fmt.Sprintf("Unsafely used '%s'", violated.Param.Name()))
+							}
 						}
 					}
 				}
