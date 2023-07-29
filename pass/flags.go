@@ -34,7 +34,7 @@ func Init() {
 }
 
 func parseConfig(pass *analysis.Pass) *Config {
-	if TestOn {
+	if Testing.on {
 		return nil
 	}
 	filePath := pass.Analyzer.Flags.Lookup(FLAG_CONFIG_FILE_PATH).Value.String()
@@ -51,7 +51,7 @@ func parseConfig(pass *analysis.Pass) *Config {
 }
 
 func isInExcludes(pass *analysis.Pass, fnDecl *ast.FuncDecl, config *Config) bool {
-	if TestOn {
+	if Testing.on {
 		return false
 	}
 	// 1. Exclude files

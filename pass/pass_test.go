@@ -9,7 +9,7 @@ import (
 
 func TestChecker(t *testing.T) {
 	testdata := analysistest.TestData()
-	pass.TestOn = true
+	pass.InitTest()
 	pass.Init()
 
 	tcs := []string{"slice", "pointer", "map", "interface", "struct"}
