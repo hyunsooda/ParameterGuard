@@ -7,3 +7,15 @@ func _(s *S) {
 		fmt.Println(s.a)
 	}
 }
+
+func _(c C) {
+	if c.b != nil {
+		fmt.Println(c.b.a)
+	}
+}
+
+func _(c C) {
+	if c.b != nil && c.b.a != nil {
+		fmt.Println(c.b.a.n)
+	}
+}

@@ -13,3 +13,9 @@ func _(f fptr) {
 		f(1, 2)
 	}
 }
+
+func _(b B) {
+	if b.a.a != nil {
+		fmt.Println(*b.a.a)
+	}
+}
