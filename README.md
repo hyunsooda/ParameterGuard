@@ -20,6 +20,7 @@ funcs:
       funcs: ["func1", "func2"]
     }
   ]
+log: false
 ```
 
 ### Interesting types
