@@ -217,7 +217,7 @@ func runBlk(ctx Context, blkStmt *ast.BlockStmt) []*ParamUsage {
 func runExpr(ctx Context, n ast.Node) []*ParamUsage {
 	switch expr := n.(type) {
 	case *ast.CallExpr:
-		if fnIdent := match(ctx.pass, expr.Fun, ctx.params); fnIdent != nil {
+		if fnIdent := isTargetedParam(ctx, expr.Fun); fnIdent != nil {
 			return []*ParamUsage{NewParamUsage(fnIdent, nil, expr, fnIdent.Pos())}
 		}
 	case *ast.BinaryExpr:
@@ -230,7 +230,7 @@ func runExpr(ctx Context, n ast.Node) []*ParamUsage {
 		if len(children) > 0 {
 			mostParentExpr := children[len(children)-1].X
 			lastChildIdent := children[0].Sel
-			if v := match(ctx.pass, mostParentExpr, ctx.params); v != nil && v.Type().String() != "*testing.T" {
+			if v := isTargetedParam(ctx, mostParentExpr); v != nil {
 				for _, innerChildren := range ctx.typCollection {
 					for ident, typ := range innerChildren {
 						if ident.Name == lastChildIdent.Name {
@@ -247,7 +247,7 @@ func runExpr(ctx Context, n ast.Node) []*ParamUsage {
 		}
 
 		// depth 1: e.g., *v
-		if v := match(ctx.pass, expr, ctx.params); v != nil {
+		if v := isTargetedParam(ctx, expr); v != nil {
 			return []*ParamUsage{NewParamUsage(v, nil, expr, v.Pos())}
 		}
 	case *ast.SelectorExpr: // rule: if a struct is pointer && access its member
@@ -257,7 +257,7 @@ func runExpr(ctx Context, n ast.Node) []*ParamUsage {
 		}
 
 		// depth 1: e.g., s.member
-		if v := match(ctx.pass, expr.X, ctx.params); v != nil {
+		if v := isTargetedParam(ctx, expr.X); v != nil {
 			switch v.Type().Underlying().(type) {
 			case *types.Pointer, *types.Interface:
 				if v.Type().String() != "*testing.T" {
@@ -266,11 +266,11 @@ func runExpr(ctx Context, n ast.Node) []*ParamUsage {
 			}
 		}
 	case *ast.SliceExpr:
-		if v := match(ctx.pass, expr.X, ctx.params); v != nil {
+		if v := isTargetedParam(ctx, expr.X); v != nil {
 			return []*ParamUsage{NewParamUsage(v, nil, expr, v.Pos())}
 		}
 	case *ast.IndexExpr:
-		if v := match(ctx.pass, expr.X, ctx.params); v != nil {
+		if v := isTargetedParam(ctx, expr.X); v != nil {
 			return []*ParamUsage{NewParamUsage(v, nil, expr, v.Pos())}
 		}
 	}
@@ -280,7 +280,7 @@ func runExpr(ctx Context, n ast.Node) []*ParamUsage {
 func lenCompGuard(ctx Context, expr ast.Expr) *ParamUsage {
 	if callExpr, isCallExpr := expr.(*ast.CallExpr); isCallExpr {
 		if fnIdent := cast2Ident(callExpr); fnIdent != nil && fnIdent.Name == "len" {
-			if lenParam := match(ctx.pass, callExpr.Args[0], ctx.params); lenParam != nil {
+			if lenParam := isTargetedParam(ctx, callExpr.Args[0]); lenParam != nil {
 				return NewParamUsage(lenParam, expr, nil, lenParam.Pos())
 			}
 		}
@@ -305,8 +305,9 @@ func runBinaryExpr(ctx Context, binaryExpr *ast.BinaryExpr) []*ParamUsage {
 		return paramUsages
 	}
 
-	lhsV := match(ctx.pass, lhs, ctx.params)
-	rhsV := match(ctx.pass, rhs, ctx.params)
+	lhsV := isTargetedParam(ctx, lhs)
+	rhsV := isTargetedParam(ctx, rhs)
+
 	if op == token.EQL || op == token.NEQ {
 		if lhsV != nil {
 			if rhsIdent := cast2Ident(rhs); rhsIdent != nil && rhsIdent.Name == "nil" {
@@ -347,7 +348,7 @@ func runTypSwitchStmt(ctx Context, typSwitchStmt *ast.TypeSwitchStmt) []*ParamUs
 			}
 
 			// depth 1: e.g., itf.(type)
-			if v := match(ctx.pass, typAssertExpr.X, ctx.params); v != nil {
+			if v := isTargetedParam(ctx, typAssertExpr.X); v != nil {
 				if _, ok := v.Type().Underlying().(*types.Interface); ok {
 					return []*ParamUsage{NewParamUsage(v, typSwitchStmt, nil, v.Pos())}
 				}
@@ -402,7 +403,7 @@ func runSelectorExprTree(ctx Context, expr ast.Expr, use bool) []*ParamUsage {
 	lastChildIdent := children[0].Sel
 
 	var usages []*ParamUsage
-	if v := match(ctx.pass, mostParentExpr, ctx.params); v != nil && v.Type().String() != "*testing.T" {
+	if v := isTargetedParam(ctx, mostParentExpr); v != nil {
 		mostParentIdent := cast2Ident(mostParentExpr)
 		mostParentTyp := ctx.pass.TypesInfo.Uses[mostParentIdent].Type()
 		for typ, innerChildren := range ctx.typCollection {
@@ -441,10 +442,13 @@ func runSelectorExprTree(ctx Context, expr ast.Expr, use bool) []*ParamUsage {
 	return usages
 }
 
-func match(pass *analysis.Pass, expr ast.Expr, params []types.Object) types.Object {
-	obj := pass.TypesInfo.ObjectOf(cast2Ident(expr))
-	if obj != nil {
-		return findParam(obj.Type(), params)
+func isTargetedParam(ctx Context, expr ast.Expr) types.Object {
+	obj := ctx.pass.TypesInfo.ObjectOf(cast2Ident(expr))
+	if obj == nil {
+		return nil
+	}
+	if v := findParam(obj.Type(), ctx.params); v != nil && v.Type().String() != "*testing.T" {
+		return v
 	}
 	return nil
 }
