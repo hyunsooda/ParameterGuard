@@ -73,7 +73,7 @@ func isInExcludes(pass *analysis.Pass, fnDecl *ast.FuncDecl, config *Config) boo
 		}
 	}
 
-	// // 3. Exclude specific functions
+	// 3. Exclude specific functions
 	curFunc := fnDecl.Name.Name
 	for _, funcs := range config.Funcs {
 		if strCmp(funcs.Pkg, curPkg) {

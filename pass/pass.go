@@ -138,12 +138,6 @@ func run(pass *analysis.Pass) (interface{}, error) {
 					interestingParams := getNilableParams(sig.Params())
 					namedTyps := aggregateNamedTyps(pass)
 					typCollection := getAllInnerTyps(pass, nil, interestingParams, namedTyps)
-					// TODO: Remove me
-					// for _, v := range typCollection {
-					// 	for _, vv := range v {
-					// 		fmt.Println(vv)
-					// 	}
-					// }
 
 					if len(interestingParams) > 0 {
 						ctx := NewContext(pass, interestingParams, typCollection)
@@ -192,15 +186,7 @@ func runBlk(ctx Context, blkStmt *ast.BlockStmt) []*ParamUsage {
 
 				}
 			}
-			// TODO: Reconsider me
 			return true
-			if len(paramUsages) > 0 {
-				// if a violated point of expression is found
-				// do not recursively iterate its children (to avoid duplicated report)
-				return false
-			} else {
-				return true
-			}
 		})
 	}
 
@@ -237,7 +223,7 @@ func runExpr(ctx Context, n ast.Node) []*ParamUsage {
 	case *ast.BinaryExpr:
 		return runBinaryExpr(ctx, expr)
 	case *ast.TypeSwitchStmt:
-		return []*ParamUsage{runTypSwitchStmt(ctx, expr)}
+		return runTypSwitchStmt(ctx, expr)
 	case *ast.StarExpr:
 		children := getSelectorExprChildren(expr.X)
 		// depth n: e.g., *s.member1.member2
@@ -350,13 +336,20 @@ func runBinaryExpr(ctx Context, binaryExpr *ast.BinaryExpr) []*ParamUsage {
 	return nil
 }
 
-func runTypSwitchStmt(ctx Context, typSwitchStmt *ast.TypeSwitchStmt) *ParamUsage {
+func runTypSwitchStmt(ctx Context, typSwitchStmt *ast.TypeSwitchStmt) []*ParamUsage {
 	// Guard Definition 3
 	if assignExpr, ok := typSwitchStmt.Assign.(*ast.ExprStmt); ok {
 		if typAssertExpr, ok := assignExpr.X.(*ast.TypeAssertExpr); ok {
+
+			// depth n: e.g., s.member1.member2.(type)
+			if paramUsage := runSelectorExprTree(ctx, typAssertExpr.X, false); paramUsage != nil {
+				return paramUsage
+			}
+
+			// depth 1: e.g., itf.(type)
 			if v := match(ctx.pass, typAssertExpr.X, ctx.params); v != nil {
 				if _, ok := v.Type().Underlying().(*types.Interface); ok {
-					return NewParamUsage(v, typSwitchStmt, nil, v.Pos())
+					return []*ParamUsage{NewParamUsage(v, typSwitchStmt, nil, v.Pos())}
 				}
 			}
 		}
