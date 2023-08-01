@@ -29,9 +29,8 @@ func aggregateNamedTyps(pass *analysis.Pass) map[types.Object]*ast.StructType {
 	typObjs := make(map[types.Object]*ast.StructType)
 	insp.Preorder(filterNodes, func(n ast.Node) {
 		if genDecl, ok := n.(*ast.GenDecl); ok {
-			if len(genDecl.Specs) > 0 {
-				// TODO: loop the Sepcs slice
-				if typSpec, ok := genDecl.Specs[0].(*ast.TypeSpec); ok {
+			for _, spec := range genDecl.Specs {
+				if typSpec, ok := spec.(*ast.TypeSpec); ok {
 					if structTyp, ok := typSpec.Type.(*ast.StructType); ok {
 						obj := pass.TypesInfo.Defs[typSpec.Name]
 						typObjs[obj] = structTyp
