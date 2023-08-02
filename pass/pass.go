@@ -186,11 +186,6 @@ func runBlk(ctx Context, blkStmt *ast.BlockStmt) []*ParamUsage {
 				}
 			}
 			return true
-			if len(paramUsages) > 0 {
-				return false
-			} else {
-				return true
-			}
 		})
 	}
 
