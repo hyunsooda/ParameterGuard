@@ -186,6 +186,11 @@ func runBlk(ctx Context, blkStmt *ast.BlockStmt) []*ParamUsage {
 				}
 			}
 			return true
+			if len(paramUsages) > 0 {
+				return false
+			} else {
+				return true
+			}
 		})
 	}
 
@@ -259,9 +264,7 @@ func runExpr(ctx Context, n ast.Node) []*ParamUsage {
 		if v := isTargetedParam(ctx, expr.X); v != nil {
 			switch v.Type().Underlying().(type) {
 			case *types.Pointer, *types.Interface:
-				if v.Type().String() != "*testing.T" {
-					return []*ParamUsage{NewParamUsage(v, nil, expr, v.Pos())}
-				}
+				return []*ParamUsage{NewParamUsage(v, nil, expr, v.Pos())}
 			}
 		}
 	case *ast.SliceExpr:
@@ -291,6 +294,7 @@ func runBinaryExpr(ctx Context, binaryExpr *ast.BinaryExpr) []*ParamUsage {
 	// Guard Definition 1
 	lhs, op, rhs := binaryExpr.X, binaryExpr.Op, binaryExpr.Y
 
+	// N detpth
 	if paramUsages := runSelectorExprTree(ctx, lhs, false); paramUsages != nil {
 		for _, usage := range paramUsages {
 			usage.guardAt = binaryExpr
@@ -304,18 +308,35 @@ func runBinaryExpr(ctx Context, binaryExpr *ast.BinaryExpr) []*ParamUsage {
 		return paramUsages
 	}
 
+	lchildren := getSelectorExprChildren(lhs)
+	if len(lchildren) > 0 {
+		lhs = lchildren[len(lchildren)-1].X
+	}
+	rchildren := getSelectorExprChildren(rhs)
+	if len(rchildren) > 0 {
+		rhs = rchildren[len(rchildren)-1].X
+	}
 	lhsV := isTargetedParam(ctx, lhs)
 	rhsV := isTargetedParam(ctx, rhs)
 
 	if op == token.EQL || op == token.NEQ {
+		// 0 or 1 depth
 		if lhsV != nil {
 			if rhsIdent := cast2Ident(rhs); rhsIdent != nil && rhsIdent.Name == "nil" {
-				return []*ParamUsage{NewParamUsage(lhsV, binaryExpr, nil, lhsV.Pos())}
+				paramUsage := NewParamUsage(lhsV, binaryExpr, nil, lhsV.Pos())
+				if len(lchildren) > 0 {
+					paramUsage.param = ctx.pass.TypesInfo.Uses[lchildren[0].Sel]
+				}
+				return []*ParamUsage{paramUsage}
 			}
 		}
 		if rhsV != nil {
 			if lhsIdent := cast2Ident(lhs); lhsIdent != nil && lhsIdent.Name == "nil" {
-				return []*ParamUsage{NewParamUsage(rhsV, binaryExpr, nil, rhsV.Pos())}
+				paramUsage := NewParamUsage(rhsV, binaryExpr, nil, rhsV.Pos())
+				if len(rchildren) > 0 {
+					paramUsage.param = ctx.pass.TypesInfo.Uses[rchildren[0].Sel]
+				}
+				return []*ParamUsage{paramUsage}
 			}
 		}
 	}
@@ -404,7 +425,7 @@ func runSelectorExprTree(ctx Context, expr ast.Expr, use bool) []*ParamUsage {
 	var usages []*ParamUsage
 	if v := isTargetedParam(ctx, mostParentExpr); v != nil {
 		mostParentIdent := cast2Ident(mostParentExpr)
-		mostParentTyp := ctx.pass.TypesInfo.Uses[mostParentIdent].Type()
+		mostParentTyp := unwrapPtrTyp(ctx.pass.TypesInfo.Uses[mostParentIdent].Type())
 		for typ, innerChildren := range ctx.typCollection {
 			if typ == mostParentTyp {
 				for ident, typ := range innerChildren {
