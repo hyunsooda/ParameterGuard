@@ -13,5 +13,5 @@ func TestChecker(t *testing.T) {
 	pass.Init()
 
 	tcs := []string{"slice", "pointer", "map", "interface", "struct"}
-	analysistest.Run(t, testdata, pass.Analyzer, tcs...)
+	analysistest.Run(t, testdata, pass.MainAnalyzer, tcs...)
 }

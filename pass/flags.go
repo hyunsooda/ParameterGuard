@@ -30,7 +30,8 @@ const (
 func Init() {
 	customFlags := flag.NewFlagSet("unsafeuse-flags", flag.ExitOnError)
 	customFlags.String(FLAG_CONFIG_FILE_PATH, "", "Set the configuration file path (default=none)")
-	Analyzer.Flags = *customFlags
+	MainAnalyzer.Flags = *customFlags
+	ParamCollector.Flags = *customFlags
 }
 
 func parseConfig(pass *analysis.Pass) *Config {

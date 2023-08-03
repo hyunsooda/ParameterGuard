@@ -17,7 +17,16 @@ type ParamUsage struct {
 	declaredAt token.Pos
 }
 
-type NamedTypes map[types.Type]map[*ast.Ident]types.Object
+type (
+	NamedTypes map[types.Type]map[*ast.Ident]types.Object
+	FuncParams = map[types.Object]ParamWithTypCollection
+	StructTyps = map[types.Object]*ast.StructType
+)
+
+type ParamWithTypCollection struct {
+	params        []types.Object
+	typCollection NamedTypes
+}
 
 type Context struct {
 	pass          *analysis.Pass
