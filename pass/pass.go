@@ -32,14 +32,8 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		if fnDecl, ok := n.(*ast.FuncDecl); ok {
 			if !isInExcludes(pass, fnDecl, config) {
 				if fn, ok := pass.TypesInfo.Defs[fnDecl.Name]; ok {
-					// sig := fn.Type().(*types.Signature)
-					// interestingParams := getNilableParams(sig.Params())
-					// namedTyps := aggregateNamedTyps(pass)
-					// typCollection := getAllInnerTyps(pass, nil, interestingParams, namedTyps)
-
 					interestingParams := funcParams[fn].params
 					if len(interestingParams) > 0 {
-						// ctx := NewContext(pass, interestingParams, typCollection)
 						ctx := NewContext(pass, interestingParams, funcParams[fn].typCollection)
 						unsanitized := runBlk(ctx, fnDecl.Body)
 						addReports(pass, fn, unsanitized)
