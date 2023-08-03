@@ -7,5 +7,5 @@ import (
 
 func main() {
 	pass.Init()
-	singlechecker.Main(pass.Analyzer)
+	singlechecker.Main(pass.MainAnalyzer)
 }
