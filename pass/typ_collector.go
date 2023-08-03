@@ -10,8 +10,8 @@ import (
 )
 
 var TypCollector = &analysis.Analyzer{
-	Doc:        "ss",
-	Name:       "aaaa",
+	Doc:        "Assistant pass for ParamGuard analyzer",
+	Name:       "typcollector",
 	Run:        runTypCollector,
 	Requires:   []*analysis.Analyzer{inspect.Analyzer},
 	ResultType: reflect.TypeOf(new(StructTyps)),

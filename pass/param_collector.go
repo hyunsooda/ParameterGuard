@@ -11,8 +11,8 @@ import (
 )
 
 var ParamCollector = &analysis.Analyzer{
-	Doc:        "ss",
-	Name:       "bbbb",
+	Doc:        "Assistant pass for ParamGuard analyzer",
+	Name:       "paramcollector",
 	Run:        runParamCollector,
 	Requires:   []*analysis.Analyzer{inspect.Analyzer, TypCollector},
 	ResultType: reflect.TypeOf(new(FuncParams)),
