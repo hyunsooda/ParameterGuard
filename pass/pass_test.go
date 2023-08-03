@@ -3,7 +3,7 @@ package pass_test
 import (
 	"testing"
 
-	"github.com/hyunsooda/unsafeuse/pass"
+	"github.com/hyunsooda/paramguard/pass"
 	"golang.org/x/tools/go/analysis/analysistest"
 )
 

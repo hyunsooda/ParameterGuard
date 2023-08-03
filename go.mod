@@ -1,4 +1,4 @@
-module github.com/hyunsooda/unsafeuse
+module github.com/hyunsooda/paramguard
 
 go 1.20
 

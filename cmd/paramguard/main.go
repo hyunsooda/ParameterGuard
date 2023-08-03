@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/hyunsooda/unsafeuse/pass"
+	"github.com/hyunsooda/paramguard/pass"
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
 
