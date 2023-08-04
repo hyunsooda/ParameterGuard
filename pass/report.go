@@ -26,6 +26,7 @@ func newReportMsg(pos token.Pos, msg string) ReportMsg {
 }
 
 func addReports(pass *analysis.Pass, fnDecl types.Object, violatedUses []*ParamUsage) {
+	InitCallGraph(pass)
 	for _, violatedUse := range violatedUses {
 		declPos, usePos := violatedUse.declaredAt, violatedUse.useAt.Pos()
 		declLoc, useLoc := pass.Fset.Position(declPos), pass.Fset.Position(usePos)
@@ -38,14 +39,24 @@ func addReports(pass *analysis.Pass, fnDecl types.Object, violatedUses []*ParamU
 		}
 
 		idx := color.New(color.FgRed).Sprintf("%4d", ReportIdx)
-		declMsg := fmt.Sprintf("[%s] Declared '%s' at -> %s", idx, paramName, declLoc)
+		funcFullName := violatedUse.fn.FullName()
+		declMsg := fmt.Sprintf("[%s] Declared '%s' at %s -> %s", idx, paramName, funcFullName, declLoc)
 		prefix := "Unsafely used"
 		useMsg := fmt.Sprintf("  --> %s '%s' %s at -> %s", prefix, paramName, violatedAtContext, useLoc)
+		cgpInfo := ""
+		if CGP != nil {
+			if callPaths, ok := CGP[funcFullName]; ok {
+				cgpInfo = fmt.Sprintf("  ==> Feasible Callgraph path => %s", callPaths)
+			}
+		}
 
 		ReportRWMutex.Lock()
 		if len(Reports[declPos]) == 0 {
 			Reports[declPos] = append(Reports[declPos], newReportMsg(declPos, declMsg))
 			ReportIdx++
+		}
+		if cgpInfo != "" {
+			Reports[declPos] = append(Reports[declPos], newReportMsg(usePos, cgpInfo))
 		}
 		Reports[declPos] = append(Reports[declPos], newReportMsg(usePos, useMsg))
 		ReportRWMutex.Unlock()
