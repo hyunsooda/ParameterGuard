@@ -10,12 +10,15 @@ import (
 )
 
 type ParamUsage struct {
+	fn         *types.Func
 	param      types.Object
 	context    types.Object
 	guardAt    ast.Node
 	useAt      ast.Node
 	declaredAt token.Pos
 }
+
+type CallGraph = map[string][]string
 
 type (
 	NamedTypes map[types.Type]map[*ast.Ident]types.Object
