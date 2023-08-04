@@ -35,7 +35,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 					interestingParams := funcParams[fn].params
 					if len(interestingParams) > 0 {
 						ctx := NewContext(pass, interestingParams, funcParams[fn].typCollection)
-						unsanitized := runBlk(ctx, fnDecl.Body)
+						unsanitized := runBlk(ctx, fnDecl.Body, fn.(*types.Func))
 						addReports(pass, fn, unsanitized)
 						reportOnTest(pass, unsanitized)
 					}
@@ -47,7 +47,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	return nil, nil
 }
 
-func runBlk(ctx Context, blkStmt *ast.BlockStmt) []*ParamUsage {
+func runBlk(ctx Context, blkStmt *ast.BlockStmt, fn *types.Func) []*ParamUsage {
 	var (
 		uses         []*ParamUsage
 		guards       []*ParamUsage
@@ -90,6 +90,7 @@ func runBlk(ctx Context, blkStmt *ast.BlockStmt) []*ParamUsage {
 			}
 		}
 		if !asserted {
+			use.fn = fn
 			unsanitized = append(unsanitized, use)
 		}
 	}
