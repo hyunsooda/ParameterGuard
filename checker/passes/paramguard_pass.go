@@ -23,7 +23,7 @@ var MainAnalyzer = &analysis.Analyzer{
 }
 
 func Init() {
-	customFlags := flag.NewFlagSet("unsafeuse-flags", flag.ExitOnError)
+	customFlags := flag.NewFlagSet("paramguard-flags", flag.ExitOnError)
 	customFlags.String(passtyps.FLAG_CONFIG_FILE_PATH, "", "Set the configuration file path (default=none)")
 	MainAnalyzer.Flags = *customFlags
 	ParamCollector.Flags = *customFlags
