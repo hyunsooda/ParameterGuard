@@ -20,7 +20,9 @@ funcs:
       funcs: ["func1", "func2"]
     }
   ]
-log: false
+log: false # Print skipped files if it is true
+callgraph: true # Additionaly provide feasible callgraph paths for the reported violations
+maxpath: 5 # Maximum path length of callgraph
 ```
 
 ### Interesting types
