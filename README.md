@@ -1,4 +1,5 @@
 # ParameterGuard
+![overview](./doc/overview.png)
 There were specific linters in place designed for static analysis of certain properties within the codebase.
 One of these was "errcheck," which focused on identifying the absence of error return checks, while another named "staticcheck" operated based on rule-based checks.
 The impetus behind this project stemmed from an approach that prioritized preemptively handling errors in coding, akin to the meticulous error-handling practices observed in C programming.
@@ -30,6 +31,7 @@ In the absence of this protective measure, the code becomes susceptible to runti
 In essence, the ParameterGuard encompasses three predetermined guards (rules).
 When parameter usages adhere to these established guards, their safety is assured.
 However, instances where such guards are absent—occurring prior to the related usages—are inserted into a report list for subsequent review, which delegates the final comfirmation to the programmers.
+`ParameterGuard` is implemented from scratch with 1K LoC in Golang, powered by Golang analysis pass pipeline.
 
 ### How to run
 `./paramguard ./...`
