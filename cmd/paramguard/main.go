@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/hyunsooda/paramguard/pass"
+	"github.com/hyunsooda/paramguard/checker/passes"
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
 
 func main() {
-	pass.Init()
-	singlechecker.Main(pass.MainAnalyzer)
+	passes.Init()
+	singlechecker.Main(passes.MainAnalyzer)
 }

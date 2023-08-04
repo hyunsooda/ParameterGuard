@@ -1,7 +1,6 @@
-package pass
+package passtyps
 
 import (
-	"flag"
 	"go/ast"
 	"io/ioutil"
 	"log"
@@ -29,15 +28,10 @@ const (
 	FLAG_CONFIG_FILE_PATH = "config"
 )
 
-func Init() {
-	customFlags := flag.NewFlagSet("unsafeuse-flags", flag.ExitOnError)
-	customFlags.String(FLAG_CONFIG_FILE_PATH, "", "Set the configuration file path (default=none)")
-	MainAnalyzer.Flags = *customFlags
-	ParamCollector.Flags = *customFlags
-}
+var Testing Test
 
-func parseConfig(pass *analysis.Pass) *Config {
-	if Testing.on {
+func ParseConfig(pass *analysis.Pass) *Config {
+	if Testing.On {
 		return nil
 	}
 	filePath := pass.Analyzer.Flags.Lookup(FLAG_CONFIG_FILE_PATH).Value.String()
@@ -53,8 +47,8 @@ func parseConfig(pass *analysis.Pass) *Config {
 	return &config
 }
 
-func isInExcludes(pass *analysis.Pass, fnDecl *ast.FuncDecl, config *Config) bool {
-	if Testing.on {
+func IsInExcludes(pass *analysis.Pass, fnDecl *ast.FuncDecl, config *Config) bool {
+	if Testing.On {
 		return false
 	}
 	// 1. Exclude files

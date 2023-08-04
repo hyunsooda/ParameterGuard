@@ -1,4 +1,4 @@
-package pass
+package report
 
 import (
 	"fmt"
@@ -7,6 +7,8 @@ import (
 	"sync"
 
 	"github.com/fatih/color"
+	"github.com/hyunsooda/paramguard/checker/callgraph"
+	"github.com/hyunsooda/paramguard/checker/passtyps"
 	"golang.org/x/tools/go/analysis"
 )
 
@@ -25,27 +27,27 @@ func newReportMsg(pos token.Pos, msg string) ReportMsg {
 	return ReportMsg{pos, msg}
 }
 
-func addReports(pass *analysis.Pass, fnDecl types.Object, violatedUses []*ParamUsage) {
-	InitCallGraph(pass)
+func AddReports(pass *analysis.Pass, fnDecl types.Object, violatedUses []*passtyps.ParamUsage) {
+	callgraph.InitCallGraph(pass)
 	for _, violatedUse := range violatedUses {
-		declPos, usePos := violatedUse.declaredAt, violatedUse.useAt.Pos()
+		declPos, usePos := violatedUse.DeclaredAt, violatedUse.UseAt.Pos()
 		declLoc, useLoc := pass.Fset.Position(declPos), pass.Fset.Position(usePos)
 
-		paramName := violatedUse.param.Name()
+		paramName := violatedUse.Param.Name()
 		violatedAtContext := ""
-		if violatedUse.context != nil {
-			violatedAtContext = fmt.Sprintf("(member: '%s')", violatedUse.param.Name())
-			paramName = violatedUse.context.Name()
+		if violatedUse.Context != nil {
+			violatedAtContext = fmt.Sprintf("(member: '%s')", violatedUse.Param.Name())
+			paramName = violatedUse.Context.Name()
 		}
 
 		idx := color.New(color.FgRed).Sprintf("%4d", ReportIdx)
-		funcFullName := violatedUse.fn.FullName()
+		funcFullName := violatedUse.Fn.FullName()
 		declMsg := fmt.Sprintf("[%s] Declared '%s' at %s -> %s", idx, paramName, funcFullName, declLoc)
 		prefix := "Unsafely used"
 		useMsg := fmt.Sprintf("  --> %s '%s' %s at -> %s", prefix, paramName, violatedAtContext, useLoc)
 		cgpInfo := ""
-		if CGP != nil {
-			if callPaths, ok := CGP[funcFullName]; ok {
+		if callgraph.CGP != nil {
+			if callPaths, ok := callgraph.CGP[funcFullName]; ok {
 				cgpInfo = fmt.Sprintf("  ==> Feasible Callgraph path => %s", callPaths)
 			}
 		}
@@ -63,13 +65,13 @@ func addReports(pass *analysis.Pass, fnDecl types.Object, violatedUses []*ParamU
 	}
 }
 
-func printReports(pass *analysis.Pass) {
+func PrintReports(pass *analysis.Pass) {
 	ReportRWMutex.RLock()
 	defer ReportRWMutex.RUnlock()
 
 	for _, reportByDecl := range Reports {
 		for _, report := range reportByDecl {
-			if !Testing.on {
+			if !passtyps.Testing.On {
 				pass.Reportf(0, report.msg)
 			}
 		}

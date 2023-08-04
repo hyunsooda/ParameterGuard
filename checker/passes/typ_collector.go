@@ -1,9 +1,10 @@
-package pass
+package passes
 
 import (
 	"go/ast"
 	"reflect"
 
+	"github.com/hyunsooda/paramguard/checker/passtyps"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
 	"golang.org/x/tools/go/ast/inspector"
@@ -14,7 +15,7 @@ var TypCollector = &analysis.Analyzer{
 	Name:       "typcollector",
 	Run:        runTypCollector,
 	Requires:   []*analysis.Analyzer{inspect.Analyzer},
-	ResultType: reflect.TypeOf(new(StructTyps)),
+	ResultType: reflect.TypeOf(new(passtyps.StructTyps)),
 }
 
 func runTypCollector(pass *analysis.Pass) (interface{}, error) {
@@ -22,12 +23,12 @@ func runTypCollector(pass *analysis.Pass) (interface{}, error) {
 	return &namedTyps, nil
 }
 
-func aggregateNamedTyps(pass *analysis.Pass) StructTyps {
+func aggregateNamedTyps(pass *analysis.Pass) passtyps.StructTyps {
 	insp := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 	filterNodes := []ast.Node{
 		(*ast.GenDecl)(nil),
 	}
-	typObjs := make(StructTyps)
+	typObjs := make(passtyps.StructTyps)
 	insp.Preorder(filterNodes, func(n ast.Node) {
 		if genDecl, ok := n.(*ast.GenDecl); ok {
 			for _, spec := range genDecl.Specs {

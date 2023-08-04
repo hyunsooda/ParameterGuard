@@ -1,10 +1,11 @@
-package pass
+package callgraph
 
 import (
 	"log"
 	"strings"
 	"sync"
 
+	"github.com/hyunsooda/paramguard/checker/passtyps"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/callgraph"
 	"golang.org/x/tools/go/callgraph/cha"
@@ -22,7 +23,7 @@ type FromTo struct {
 const DefaultNPaths = 30
 
 var (
-	CGP  CallGraph
+	CGP  passtyps.CallGraph
 	once = new(sync.Once)
 )
 
@@ -32,10 +33,10 @@ func getProjPkg(pkg *ssa.Package) string {
 }
 
 func InitCallGraph(p *analysis.Pass) {
-	if Testing.on {
+	if passtyps.Testing.On {
 		return
 	}
-	config := parseConfig(p)
+	config := passtyps.ParseConfig(p)
 	if config.CallGraph {
 		nPaths := config.Maxpath
 		if nPaths == 0 {
@@ -50,7 +51,7 @@ func InitCallGraph(p *analysis.Pass) {
 /// genCallGraph returns callpaths for all of the callees.
 /// Return format is (callee, [caller of callee (P), caller of P (PP), caller of PP, ...])
 /// For N of different callers, they are represented with the array
-func genCallGraph(max int) CallGraph {
+func genCallGraph(max int) passtyps.CallGraph {
 	cfg := &packages.Config{
 		Mode:  packages.LoadAllSyntax,
 		Tests: false,
@@ -71,7 +72,7 @@ func genCallGraph(max int) CallGraph {
 	proj := getProjPkg(pkgs[0])
 	cg := vta.CallGraph(ssautil.AllFunctions(prog), cha.CallGraph(prog))
 
-	callPaths := make(CallGraph)
+	callPaths := make(passtyps.CallGraph)
 	callgraph.GraphVisitEdges(cg, func(e *callgraph.Edge) error {
 		callerFunc := e.Caller.Func
 		callee, calleeFunc := e.Callee, e.Callee.Func
