@@ -20,7 +20,9 @@ type Config struct {
 		Pkg   string
 		Funcs []string
 	}
-	Log bool
+	Log       bool
+	CallGraph bool
+	Maxpath   int
 }
 
 const (
