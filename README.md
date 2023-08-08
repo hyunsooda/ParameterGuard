@@ -34,8 +34,8 @@ However, instances where such guards are absent—occurring prior to the related
 `ParameterGuard` is implemented from scratch with 1K LoC in Golang, powered by Golang analysis pass pipeline.
 
 ### How to build
-`cd cmd cd cmd/paramguard; go install` # method1: compile and copy the compiled binary to $GOPATH/bin
-`cd cmd cd cmd/paramguard; go build` # method2: compile
+`cd cmd/paramguard; go build` # method1: compile
+`cd cmd/paramguard; go install` # method2: compile and copy the compiled binary to `$GOPATH/bin`
 
 ### How to run
 Simply, `./paramguard ./...` // all the reports to stdout
