@@ -23,7 +23,9 @@ func MapMerge(m1, m2 passtyps.NamedTypes) passtyps.NamedTypes {
 		}
 	}
 	for declTyp, structTyp := range m2 {
-		m[declTyp] = make(map[*ast.Ident]types.Object)
+		if m[declTyp] == nil {
+			m[declTyp] = make(map[*ast.Ident]types.Object)
+		}
 		for ident, obj := range structTyp {
 			m[declTyp][ident] = obj
 		}
