@@ -39,6 +39,7 @@ However, instances where such guards are absent—occurring prior to the related
 
 ### How to run
 Simply, `./paramguard ./...` # all the reports to stdout
+
 To make a report file, `paramguard --config=../exclude.yml ./... 2>&1 | tee -a report` # `report` file contains all the reported violations
 
 ### Flag
