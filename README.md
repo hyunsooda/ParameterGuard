@@ -38,9 +38,9 @@ However, instances where such guards are absent—occurring prior to the related
 `cd cmd cd cmd/paramguard; go build` # method2: compile
 
 ### How to run
-Simply, `./paramguard ./...` # all the reports to stdout
+Simply, `./paramguard ./...` // all the reports to stdout
 
-To make a report file, `paramguard --config=../exclude.yml ./... 2>&1 | tee -a report` # `report` file contains all the reported violations
+To make a report file, `paramguard --config=../exclude.yml ./... 2>&1 | tee -a report` // `report` file contains all the reported violations
 
 ### Flag
 `--config=<configuration file path>` Set the configuration file path (default=none)
