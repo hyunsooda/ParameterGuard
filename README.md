@@ -33,8 +33,13 @@ When parameter usages adhere to these established guards, their safety is assure
 However, instances where such guards are absent—occurring prior to the related usages—are inserted into a report list for subsequent review, which delegates the final comfirmation to the programmers.
 `ParameterGuard` is implemented from scratch with 1K LoC in Golang, powered by Golang analysis pass pipeline.
 
+### How to build
+`cd cmd cd cmd/paramguard; go install` # method1: compile and copy the compiled binary to $GOPATH/bin
+`cd cmd cd cmd/paramguard; go build` # method2: compile
+
 ### How to run
-`./paramguard ./...`
+Simply, `./paramguard ./...` # all the reports to stdout
+To make a report file, `paramguard --config=../exclude.yml ./... 2>&1 | tee -a report` # `report` file contains all the reported violations
 
 ### Flag
 `--config=<configuration file path>` Set the configuration file path (default=none)
