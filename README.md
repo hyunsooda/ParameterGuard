@@ -35,6 +35,7 @@ However, instances where such guards are absent—occurring prior to the related
 
 ### How to build
 `cd cmd/paramguard; go build` # method1: compile
+
 `cd cmd/paramguard; go install` # method2: compile and copy the compiled binary to `$GOPATH/bin`
 
 ### How to run
